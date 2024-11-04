@@ -34,13 +34,16 @@ After successful execution, you will get `se-message` and `ibmse-policy.rego` in
 
 ## Prerequisites
 
-The user needs to copy the `Rvps-Extraction` folder locally:
+The user needs to clone sandboxed-containers-operator locally and get inside script folder:
 
 ```bash
+#git clone git@github.com:openshift/sandboxed-containers-operator.git
+#cd sandboxed-containers-operator/hack/Rvps-Extraction 
 [root@a3elp36 Rvps-Extraction]# ls -lrt
-total 8
+
 drwxr-xr-x. 2 root root   65 Oct 19 16:52 static-files
 -rwxr-xr-x. 1 root root 6078 Oct 19 16:52 GetRvps.sh
+-rwxr-xr-x. 1 root root 6078 Oct 19 16:52 RVPS_Reference.md
 ```
 
 Once copied, the script can be executed as follows:
