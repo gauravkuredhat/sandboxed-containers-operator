@@ -33,8 +33,50 @@ The script will help retrieve the RVPS via the following two options:
 After successful execution, you will get `se-message` and `ibmse-policy.rego` in a directory called `output-files`. These files will contain the RVPS parameters.
 
 ## Prerequisites
+1. The user needs to check if Network Block device ('nbd3') is available or not because the script is written on the basis of 'nbd3'.
+Then can check using below and make sure it's siae is 0 bytes :- 
 
-The user can copy the script and associated files locally and get inside script folder with following steps:
+# lsblk | grep nbd3
+# nbd3         43:96   0    0B  0 disk
+
+```
+In case if it is allocated, try to disconnect it and then progress further.
+If it can't be deallocated due to other usage , we can check which 'nbd' is available
+:-
+[root@a3elp61 ~]# lsblk | grep nbd3
+nbd3         43:96   0    0B  0 disk
+[root@a3elp61 ~]# lsblk
+NAME        MAJ:MIN RM  SIZE RO TYPE  MOUNTPOINTS
+loop0         7:0    0  7.6G  0 loop  /var/www/html/bastioniso
+sda           8:0    0    2T  0 disk
+`-mpatha    253:0    0    2T  0 mpath
+  `-mpatha1 253:1    0    2T  0 part  /var/lib/containers/storage/overlay
+                                      /
+sdb           8:16   0    2T  0 disk
+`-mpatha    253:0    0    2T  0 mpath
+  `-mpatha1 253:1    0    2T  0 part  /var/lib/containers/storage/overlay
+                                      /
+nbd0         43:0    0    0B  0 disk
+nbd1         43:32   0    0B  0 disk
+nbd2         43:64   0    0B  0 disk
+nbd3         43:96   0    0B  0 disk
+nbd4         43:128  0    0B  0 disk
+nbd5         43:160  0    0B  0 disk
+nbd6         43:192  0    0B  0 disk
+nbd7         43:224  0    0B  0 disk
+nbd8         43:256  0    0B  0 disk
+nbd9         43:288  0    0B  0 disk
+nbd10        43:320  0    0B  0 disk
+nbd11        43:352  0    0B  0 disk
+nbd12        43:384  0    0B  0 disk
+nbd13        43:416  0    0B  0 disk
+nbd14        43:448  0    0B  0 disk
+nbd15        43:480  0    0B  0 disk
+
+In this case ,any nbd from  nbd0 to nbd15 can be used. The same 'nbd' user can replace in the script(GetRvps.sh) .  In maximum cases , it will not be required as 'nbd3' will be available always.
+
+2. The user needs to copy the script and associated files in the respective lpar. They can follow below steps. 
+
 ```bash
 Step 1. Create the directory
 #mkdir -p Rvps-Extraction/static-files
