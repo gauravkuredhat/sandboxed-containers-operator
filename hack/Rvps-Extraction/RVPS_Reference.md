@@ -76,6 +76,7 @@ nbd14        43:448  0    0B  0 disk
 nbd15        43:480  0    0B  0 disk
 
 In this case ,any nbd from  nbd0 to nbd15 can be used. The same 'nbd' user can replace in the script(GetRvps.sh) .  In maximum cases , it will not be required as 'nbd3' will be available always.
+```
 
 2. The user needs to copy the script and associated files in the respective lpar. They can follow below steps. 
 
