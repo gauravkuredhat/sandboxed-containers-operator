@@ -34,10 +34,12 @@ After successful execution, you will get `se-message` and `ibmse-policy.rego` in
 
 ## Prerequisites
 1. The user needs to check if Network Block device ('nbd3') is available or not because the script is written on the basis of 'nbd3'.
-Then can check using below and make sure it's siae is 0 bytes :- 
+Then can check using below and make sure it's size is 0 bytes :- 
 
+```
 # lsblk | grep nbd3
 # nbd3         43:96   0    0B  0 disk
+```
 
 ```
 In case if it is allocated, try to disconnect it and then progress further.
