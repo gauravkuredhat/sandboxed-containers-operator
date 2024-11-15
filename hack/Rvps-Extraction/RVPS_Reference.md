@@ -34,36 +34,148 @@ After successful execution, you will get `se-message` and `ibmse-policy.rego` in
 
 ## Prerequisites
 
-The user needs to clone sandboxed-containers-operator locally and get inside script folder:
-
+The user can copy the script and associated files locally and get inside script folder with following steps:
 ```bash
-#git clone git@github.com:openshift/sandboxed-containers-operator.git
-#cd sandboxed-containers-operator/hack/Rvps-Extraction 
-[root@a3elp36 Rvps-Extraction]# ls -lrt
+Step 1. Create the directory
+#mkdir -p Rvps-Extraction/static-files
 
-drwxr-xr-x. 2 root root   65 Oct 19 16:52 static-files
--rwxr-xr-x. 1 root root 6078 Oct 19 16:52 GetRvps.sh
--rwxr-xr-x. 1 root root 6078 Oct 19 16:52 RVPS_Reference.md
+Step 2. Naviate to the source directory and copy the script
+# cd Rvps-Extraction/
+# wget https://github.com/openshift/sandboxed-containers-operator/raw/devel/hack/Rvps-Extraction/GetRvps.sh -O $PWD/GetRvps.sh
+# chmod +x GetRvps.sh
+
+Step 3. Naviate to the child directory and copy the python extraction script along with pvextract
+
+# cd static-files/
+# wget https://github.com/openshift/sandboxed-containers-operator/raw/devel/hack/Rvps-Extraction/static-files/pvextract-hdr -O $PWD/pvextract-hdr
+# chmod +x pvextract-hdr
+# wget https://github.com/openshift/sandboxed-containers-operator/raw/devel/hack/Rvps-Extraction/static-files/se_parse_hdr.py -O $PWD/se_parse_hdr.py
+
+Step 4. copy HKD.crt for the respective lpar from local to the same directory
+# cp ~/path/to/<hkd_cert.crt> .
+
+So After step 4 completion, the 'static-files' directory will contain below files :- 
+
+HKD.crt
+pvextract-hdr
+se_parse_hdr.py
 ```
 
 Once copied, the script can be executed as follows:
 
 ```bash
-./GetRvps.sh
+Step 1. Navigate to source directory where script has been copied
+#cd Rvps-Extraction
+
+Step 2. Execute the script. The script will install the required packages and will ask for RVPS extraction options. Below will be a sample output.
+# ./GetRvps.sh
+
+$$$$$Sample output starts
+***Installing necessary packages for RVPS values extraction ***
+Updating Subscription Management repositories.
+Last metadata expiration check: 0:20:12 ago on Fri Nov 15 07:45:26 2024.
+Package python3-3.9.18-3.el9_4.6.s390x is already installed.
+Package python3-cryptography-36.0.1-4.el9.s390x is already installed.
+Package kmod-28-9.el9.s390x is already installed.
+Dependencies resolved.
+=========================================================================================
+ Package                   Arch   Version          Repository                       Size
+=========================================================================================
+Upgrading:
+ kmod                      s390x  28-10.el9        rhel-9-for-s390x-baseos-rpms    129 k
+ python-unversioned-command
+                           noarch 3.9.19-8.el9_5.1 rhel-9-for-s390x-appstream-rpms  11 k
+ python3                   s390x  3.9.19-8.el9_5.1 rhel-9-for-s390x-baseos-rpms     30 k
+ python3-devel             s390x  3.9.19-8.el9_5.1 rhel-9-for-s390x-appstream-rpms 249 k
+ python3-libs              s390x  3.9.19-8.el9_5.1 rhel-9-for-s390x-baseos-rpms    7.9 M
+
+Transaction Summary
+=========================================================================================
+Upgrade  5 Packages
+
+Total download size: 8.3 M
+Downloading Packages:
+(1/5): python3-3.9.19-8.el9_5.1.s390x.rpm                 52 kB/s |  30 kB     00:00
+(2/5): python3-libs-3.9.19-8.el9_5.1.s390x.rpm           8.8 MB/s | 7.9 MB     00:00
+(3/5): kmod-28-10.el9.s390x.rpm                          142 kB/s | 129 kB     00:00
+(4/5): python-unversioned-command-3.9.19-8.el9_5.1.noarc  32 kB/s |  11 kB     00:00
+(5/5): python3-devel-3.9.19-8.el9_5.1.s390x.rpm          903 kB/s | 249 kB     00:00
+-----------------------------------------------------------------------------------------
+Total                                                    7.0 MB/s | 8.3 MB     00:01
+Running transaction check
+Transaction check succeeded.
+Running transaction test
+Transaction test succeeded.
+Running transaction
+  Preparing        :                                                                 1/1
+  Upgrading        : python3-libs-3.9.19-8.el9_5.1.s390x                            1/10
+  Upgrading        : python-unversioned-command-3.9.19-8.el9_5.1.noarch             2/10
+  Upgrading        : python3-3.9.19-8.el9_5.1.s390x                                 3/10
+  Upgrading        : python3-devel-3.9.19-8.el9_5.1.s390x                           4/10
+  Upgrading        : kmod-28-10.el9.s390x                                           5/10
+  Cleanup          : python3-devel-3.9.18-3.el9_4.6.s390x                           6/10
+  Cleanup          : python3-3.9.18-3.el9_4.6.s390x                                 7/10
+  Cleanup          : python-unversioned-command-3.9.18-3.el9_4.6.noarch             8/10
+  Cleanup          : python3-libs-3.9.18-3.el9_4.6.s390x                            9/10
+  Cleanup          : kmod-28-9.el9.s390x                                           10/10
+  Running scriptlet: kmod-28-9.el9.s390x                                           10/10
+  Verifying        : kmod-28-10.el9.s390x                                           1/10
+  Verifying        : kmod-28-9.el9.s390x                                            2/10
+  Verifying        : python3-3.9.19-8.el9_5.1.s390x                                 3/10
+  Verifying        : python3-3.9.18-3.el9_4.6.s390x                                 4/10
+  Verifying        : python3-libs-3.9.19-8.el9_5.1.s390x                            5/10
+  Verifying        : python3-libs-3.9.18-3.el9_4.6.s390x                            6/10
+  Verifying        : python-unversioned-command-3.9.19-8.el9_5.1.noarch             7/10
+  Verifying        : python-unversioned-command-3.9.18-3.el9_4.6.noarch             8/10
+  Verifying        : python3-devel-3.9.19-8.el9_5.1.s390x                           9/10
+  Verifying        : python3-devel-3.9.18-3.el9_4.6.s390x                          10/10
+Installed products updated.
+
+Upgraded:
+  kmod-28-10.el9.s390x                python-unversioned-command-3.9.19-8.el9_5.1.noarch
+  python3-3.9.19-8.el9_5.1.s390x      python3-devel-3.9.19-8.el9_5.1.s390x
+  python3-libs-3.9.19-8.el9_5.1.s390x
+
+Complete!
+***Installation Finished ***
+1) Generate the RVPS From Local Image from User pc
+2) Generate RVPS from Volume
+3) Quit
+Please enter your choice: 1
+Enter the Qcow2 image with Full path
+/root/gaurav-testing-rvps/se-podvm-b7e5e2a-gaurav-s390x.qcow2
+mount: /mnt/myvm: special device /dev/nbd3p1 does not exist.
+Error: Failed to mount the image. Retrying...
+Mounting on second attempt passed
+/dev/nbd3 disconnected
+SE header found at offset 0x014000
+SE header written to '/root/gaurav-testing-rvps/Downloadables/Rvps-Extraction/output-files/hdr.bin' (640 bytes)
+se.tag:  a8a938f4ea3f9453da005574e0e75434
+se.image_phkh:  92d0aff6eb86719b6b1ea0cb98d2c99ff2ec693df3efff2158f54112f6961508
+provenance = ewogICAgInNlLmF0dGVzdGF0aW9uX3Boa2giOiBbCiAgICAgICAgIjkyZDBhZmY2ZWI4NjcxOWI2YjFlYTBjYjk4ZDJjOTlmZjJlYzY5M2RmM2VmZmYyMTU4ZjU0MTEyZjY5NjE1MDgiCiAgICBdLAogICAgInNlLnRhZyI6IFsKICAgICAgICAiYThhOTM4ZjRlYTNmOTQ1M2RhMDA1NTc0ZTBlNzU0MzQiCiAgICBdLAogICAgInNlLmltYWdlX3Boa2giOiBbCiAgICAgICAgIjkyZDBhZmY2ZWI4NjcxOWI2YjFlYTBjYjk4ZDJjOTlmZjJlYzY5M2RmM2VmZmYyMTU4ZjU0MTEyZjY5NjE1MDgiCiAgICBdLAogICAgInNlLnVzZXJfZGF0YSI6IFsKICAgICAgICAiMDAiCiAgICBdLAogICAgInNlLnZlcnNpb24iOiBbCiAgICAgICAgIjI1NiIKICAgIF0KfQo=
+-rw-r--r--. 1 root root 640 Nov 15 08:11 /root/gaurav-testing-rvps/Downloadables/Rvps-Extraction/output-files/hdr.bin
+-rw-r--r--. 1 root root 446 Nov 15 08:11 /root/gaurav-testing-rvps/Downloadables/Rvps-Extraction/output-files/ibmse-policy.rego
+-rw-r--r--. 1 root root 561 Nov 15 08:11 /root/gaurav-testing-rvps/Downloadables/Rvps-Extraction/output-files/se-message
+Please enter your choice: 3
+[root@a3elp61 Rvps-Extraction]# cat /root/gaurav-testing-rvps/Downloadables/Rvps-Extraction/output-files/ibmse-policy.rego
+
+[root@a3elp61 Rvps-Extraction]# cat /root/gaurav-testing-rvps/Downloadables/Rvps-Extraction/output-files/ibmse-policy.rego
+package policy
+import rego.v1
+default allow = false
+converted_version := sprintf("%v", [input["se.version"]])
+allow if {
+    input["se.attestation_phkh"] == "92d0aff6eb86719b6b1ea0cb98d2c99ff2ec693df3efff2158f54112f6961508"
+    input["se.image_phkh"] == "92d0aff6eb86719b6b1ea0cb98d2c99ff2ec693df3efff2158f54112f6961508"
+    input["se.tag"] == "a8a938f4ea3f9453da005574e0e75434"
+    input["se.user_data"] == "00"
+    converted_version == "256"
+}
+$$$$$Sample output ends
+
+Step 3. User can get the RVPS values inside the file 'ibmse-policy.rego' and use it. There is one additional file also called 'se-message' which has 'provenance' values. It can be used in few cases. But the main file is 'ibmse-policy.rego' here. 
 ```
 
-### Options
-1. Generate the RVPS from a local image on the user’s PC
-2. Generate RVPS from a volume
-3. Quit
-
-Once the script finishes, the output directory will be created, and the files will be copied to the same path where the script is executed. For example:
-
-```bash
--rw-r--r--. 1 root root 640 Oct 9 13:25 /root/gaurav-rvps-test/COCO-1010/output-files/hdr.bin
--rw-r--r--. 1 root root 446 Oct 9 13:25 /root/gaurav-rvps-test/COCO-1010/output-files/ibmse-policy.rego
--rw-r--r--. 1 root root 561 Oct 9 13:25 /root/gaurav-rvps-test/COCO-1010/output-files/se-message
-```
 
 ## Static Files
 
