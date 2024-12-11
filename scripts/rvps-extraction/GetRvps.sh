@@ -3,18 +3,18 @@
 
 function install_packages() {
     echo "***Installing necessary packages for RVPS values extraction ***"
-    dnf install -y python3 python3-cryptography kmod 
+    dnf install -y python3 python3-cryptography kmod
     echo "***Installation Finished ***"
 }
 
 # Function to mount the image and extract se.img
 function mount_and_extract_image() {
     local img_path=$1
-    
+
     # Cleanup any previous files and directories
     rm -rf se.img /mnt/myvm
     mkdir /mnt/myvm
-    
+
     # Load nbd module and mount the image
     modprobe nbd
     if [ $? -ne 0 ]; then
@@ -22,40 +22,87 @@ function mount_and_extract_image() {
         exit 1
     fi
 
-    qemu-nbd -c /dev/nbd3 $img_path
+
+    #Check the available nbd and use it
+    nbd_available=`lsblk | grep nbd | grep 0B | awk '{print $1}' | head -1`
+    echo $nbd_available "looks available. Starting Mounting the image with it.."
+    qemu-nbd -c /dev/$nbd_available $img_path
+
     if [ $? -ne 0 ]; then
         echo "Error: Failed to connect to nbd device."
         exit 1
     fi
 
 
-    mount /dev/nbd3p1 /mnt/myvm
+
+    mount /dev/"$nbd_available"p1 /mnt/myvm
     if [ $? -ne 0 ]; then
          echo "Error: Failed to mount the image. Retrying..."
          sleep 2
-         mount /dev/nbd3p1 /mnt/myvm
+         mount /dev/"$nbd_available"p1 /mnt/myvm
          if [ $? -ne 0 ]; then
-     		echo "Retrial for mounting failed. Please rerun the script"
-     		exit 1
-	 else
-		echo "Mounting on second attempt passed"
-         fi
-     fi
+	      echo "Retrial for mounting failed. Creating "$nbd_available"p1 manually.."
+             #Parsing lsblk output to get the major and minor numbers assigned to nbd.
+              devmajor=$(lsblk | grep -w "$nbd_available" | awk '{print $2}' | awk -F ":" '{print $1}' | xargs)
+              devminor=$(lsblk | grep -w "$nbd_available" | awk '{print $2}' | awk -F ":" '{print $2}' | xargs)
+
+              # Ensure devminor is a number before performing arithmetic
+              # The device minor version form nbdxp1 should be equal to minor_version of nbdx + 1
+              if [[ "$devminor" =~ ^[0-9]+$ ]]; then
+                    newdevminor=$((devminor + 1))
+              else
+	            echo $devminor
+                    echo "Error: nbd minor value is not a valid integer. Disconnecting and exiting.."
+	            qemu-nbd -d /dev/"$nbd_available"
+                    exit 1
+              fi
+
+	      sleep 2
+	      #manual creation of nbdxp1 using mknod
+	      mknod /dev/"$nbd_available"p1 b $devmajor $newdevminor
+	      if [ $? -ne 0 ]; then
+	            echo "manual node creation is failed. Disconnecting the device"
+		    qemu-nbd -d /dev/"$nbd_available"
+                    exit 1
+	      else
+	            echo ""$nbd_available"p1 creation is successful"
+              fi
+
+	      mount /dev/"$nbd_available"p1 /mnt/myvm
+	      if [ $? -ne 0 ]; then
+	            echo "Third attempt is also failed even after manual creation of device "$nbd_available"p1. Try with Lpar reboot.."
+	            qemu-nbd -d /dev/"$nbd_available"
+	            exit 1
+	      else
+	            echo "Mounting successful after 3rd attempt.."
+	      fi
+
+        else
+            echo "Mounting on second attempt passed"
+        fi
+
+    fi
     # Extract and process image
     rm -rf $PWD/output-files
-    mkdir -p $PWD/output-files        
-    rm -rf se.img 
+    mkdir -p $PWD/output-files
+    rm -rf se.img
     cp /mnt/myvm/se.img ./
     mv se.img $PWD/output-files/
-    
+
     umount /mnt/myvm
-    qemu-nbd -d /dev/nbd3
+    qemu-nbd -d /dev/$nbd_available
 }
 
 # Function to generate se-sample and ibmse-policy.rego files
 function generate_policy_files() {
     local se_tag=$1
     local se_image_phkh=$2
+
+    if [ -z "$se_image_phkh" ]; then
+        echo "There seems to be some issue in HKD.crt. Please use the correct one and run it again."
+        exit 1
+    fi
+
 
     # Create se-sample file
     cat <<EOF > $PWD/output-files/se-sample
@@ -108,18 +155,18 @@ do
             read -r img_path
 
             mount_and_extract_image $img_path
-            
+
             $PWD/static-files/pvextract-hdr -o $PWD/output-files/hdr.bin $PWD/output-files/se.img
-            
+
             # Extract necessary values
             se_tag=$(python3 $PWD/static-files/se_parse_hdr.py $PWD/output-files/hdr.bin $PWD/static-files/HKD.crt | grep se.tag | awk -F ":" '{ print $2 }')
             se_image_phkh=$(python3 $PWD/static-files/se_parse_hdr.py $PWD/output-files/hdr.bin $PWD/static-files/HKD.crt | grep se.image_phkh | awk -F ":" '{ print $2 }')
-            
+
             echo "se.tag: $se_tag"
             echo "se.image_phkh: $se_image_phkh"
 
             generate_policy_files $se_tag $se_image_phkh
-            
+
             provenance=$(cat $PWD/output-files/se-sample | base64 --wrap=0)
             echo "provenance = $provenance"
 
@@ -134,7 +181,7 @@ EOF
 
             ls -lrt $PWD/output-files/hdr.bin $PWD/output-files/se-message $PWD/output-files/ibmse-policy.rego
             ;;
-        
+
         "Generate RVPS from Volume")
             echo "Enter the Libvirt Pool Name"
             read -r LIBVIRT_POOL
@@ -152,11 +199,11 @@ EOF
                 echo "Downloading Failed"
                 exit 1
             fi
-            
+
             img_path=$PWD/PODVM-VOL-IMAGE/podvm_test.qcow2
-            
+
             mount_and_extract_image $img_path
-            
+
             $PWD/static-files/pvextract-hdr -o $PWD/output-files/hdr.bin $PWD/output-files/se.img
 
             # Extract necessary values
@@ -167,7 +214,7 @@ EOF
             echo "se.image_phkh: $se_image_phkh"
 
             generate_policy_files $se_tag $se_image_phkh
-            
+
             provenance=$(cat $PWD/output-files/se-sample | base64 --wrap=0)
             echo "provenance = $provenance"
 
@@ -182,11 +229,11 @@ EOF
 
             ls -lrt $PWD/output-files/hdr.bin $PWD/output-files/se-message $PWD/output-files/ibmse-policy.rego
             ;;
-        
+
         "Quit")
             break
             ;;
-        
+
         *) echo "Invalid option: $REPLY";;
     esac
 done
