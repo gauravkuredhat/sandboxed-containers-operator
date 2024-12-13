@@ -41,47 +41,15 @@ function mount_and_extract_image() {
          sleep 2
          mount /dev/"$nbd_available"p1 /mnt/myvm
          if [ $? -ne 0 ]; then
-	      echo "Retrial for mounting failed. Creating "$nbd_available"p1 manually.."
-             #Parsing lsblk output to get the major and minor numbers assigned to nbd.
-              devmajor=$(lsblk | grep -w "$nbd_available" | awk '{print $2}' | awk -F ":" '{print $1}' | xargs)
-              devminor=$(lsblk | grep -w "$nbd_available" | awk '{print $2}' | awk -F ":" '{print $2}' | xargs)
-
-              # Ensure devminor is a number before performing arithmetic
-              # The device minor version form nbdxp1 should be equal to minor_version of nbdx + 1
-              if [[ "$devminor" =~ ^[0-9]+$ ]]; then
-                    newdevminor=$((devminor + 1))
-              else
-	            echo $devminor
-                    echo "Error: nbd minor value is not a valid integer. Disconnecting and exiting.."
-	            qemu-nbd -d /dev/"$nbd_available"
-                    exit 1
-              fi
-
-	      sleep 2
-	      #manual creation of nbdxp1 using mknod
-	      mknod /dev/"$nbd_available"p1 b $devmajor $newdevminor
-	      if [ $? -ne 0 ]; then
-	            echo "manual node creation is failed. Disconnecting the device"
-		    qemu-nbd -d /dev/"$nbd_available"
-                    exit 1
-	      else
-	            echo ""$nbd_available"p1 creation is successful"
-              fi
-
-	      mount /dev/"$nbd_available"p1 /mnt/myvm
-	      if [ $? -ne 0 ]; then
-	            echo "Third attempt is also failed even after manual creation of device "$nbd_available"p1. Try with Lpar reboot.."
-	            qemu-nbd -d /dev/"$nbd_available"
-	            exit 1
-	      else
-	            echo "Mounting successful after 3rd attempt.."
-	      fi
-
-        else
-            echo "Mounting on second attempt passed"
-        fi
+	       echo "Retrial of mounting is failed. Please check if LPAR is overloaded or try one LPAR reboot"
+	       qemu-nbd -d /dev/"$nbd_available"
+               exit 1
+         else
+               echo "Mounting on second attempt passed"
+         fi
 
     fi
+
     # Extract and process image
     rm -rf $PWD/output-files
     mkdir -p $PWD/output-files
